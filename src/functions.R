@@ -156,11 +156,11 @@ fun_generate_edges_nodes2 <- function(data_to_network,
 
 
 
-###### 
-
+###### Looking at the network at the ideals level enabled trough the subthems, themes, etc
 
 fun_generate_edges_nodes_ideals <- function(data_ideals, data_to_network, 
-                                            title = 'all', folder = '', typelinks = 'sub_theme',
+                                            title = 'all', folder = '', 
+                                            typelinks = 'sub_theme',
                                             dimension = 'all', 
                                             outpath = NULL){
   vect_ideals <- data_ideals$Ideal
@@ -179,8 +179,7 @@ fun_generate_edges_nodes_ideals <- function(data_ideals, data_to_network,
     if(!typelinks %in% c('theme', 'dimension')){
       cat('Generating at the sub_theme level \n')
       target_id_1 <- data_to_network %>% filter(sub_theme %in% source_id$sub_theme & Ideal != vect_ideals[ii])
-      list_themes_links[[data_ideals$Ideal[ii]]] <- target_id_1[, c("Ideal", "theme", "dimension", "Pillar")]
-      #target_id_2 <- data_to_network %>% filter(sub_theme_related %in% source_id$sub_theme & Ideal != vect_ideals[ii])
+      list_themes_links[[data_ideals$Ideal[ii]]] <- target_id_1[, c("id_network", "Ideal", "theme", "sub_theme", "dimension", "Pillar")]
       cat("source id - total subthemes:", length(unique(source_id$sub_theme )), '\n', 
           "target id - total subthemes:", length(unique(target_id_1$sub_theme )), '\n')
     }
@@ -188,13 +187,11 @@ fun_generate_edges_nodes_ideals <- function(data_ideals, data_to_network,
     if(typelinks == 'theme'){
       cat('Generating at the theme level \n')
       target_id_1 <- data_to_network %>% filter(theme %in% source_id$theme & Ideal != vect_ideals[ii])
-      #target_id_2 <- data_to_network %>% filter(theme_related %in% source_id$theme & Ideal != vect_ideals[ii])
     }
     
     if(typelinks == 'dimension'){
       cat('Generating at the dimension level \n')
       target_id_1 <- data_to_network %>% filter(dimension %in% source_id$dimension & Ideal != vect_ideals[ii])
-      #target_id_2 <- data_to_network %>% filter(dimension_related %in% source_id$dimension & Ideal != vect_ideals[ii])
     }
     
     source_consol <- data_ideals %>% filter(Ideal == vect_ideals[ii])
@@ -219,7 +216,7 @@ fun_generate_edges_nodes_ideals <- function(data_ideals, data_to_network,
   return(list(data_edges = data_edges, data_nodes = data_nodes, list_themes_links = list_themes_links))
 }
 
-#### links across themes enabled through ideals
+#### links across themes enabled through ideals at the indicator level 
 fun_generate_edges_nodes_themes_ideals <- function(data_themes_network,
                                                    data_themes_network_unique,
                                                    data_ideals,

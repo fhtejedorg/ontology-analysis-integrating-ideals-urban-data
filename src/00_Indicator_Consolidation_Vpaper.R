@@ -1,6 +1,6 @@
 ####### 00_Consolidating existing monitors into one dataset 
 
-Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre-1.8')
+# Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre-1.8')
 library(xlsx)
 library(igraph)
 library(dplyr)
@@ -175,8 +175,6 @@ data_to_network_all_ideals %>% filter(is.na(theme))
 dim(data_to_network_all_ideals)
 data_to_network_all_ideals <- merge(data_to_network_all_ideals, dat_relabel_table_conceptual, 
                                     by.x = c('dimension', 'theme'), by.y = c('Old_Dimension', 'Old_Theme'), all.x = T)
-dim(data_to_network_all_ideals)
-
 
 dim(data_to_network_all_ideals)
 data_to_network_all_ideals <- merge(data_to_network_all_ideals, 
@@ -211,4 +209,15 @@ addmargins(table(data_to_network_all_ideals$monitor))
 
 write.xlsx2(data_to_network_all_ideals, file = 'Inventory_Indicators_Dimensions_Ideals.xlsx', 
             showNA = FALSE, row.names = FALSE, sheetName = 'Inventory_Consolidated')
+
 save(data_to_network_all_ideals, file = 'data_to_network_all_ideals.Rdata')
+
+library(stringr)
+data_output_filter <- data_to_network_all_ideals
+data_output_filter$short_indicator <- gsub("[\r\n]", "", data_output_filter$short_indicator) 
+data_output_filter$indicator <- gsub("[\r\n]", "", data_output_filter$indicator) 
+# data_output_filter$short_indicator <- 1:nrow(data_output_filter)
+# data_output_filter$indicator <- 1:nrow(data_output_filter)
+
+write.table(data_output_filter, sep =';', row.names = FALSE, quote = FALSE, na = '',fileEncoding = 'utf-8', eol = '\r',
+            file = 'Inventory_Indicators_Dimensions_Ideals.csv')

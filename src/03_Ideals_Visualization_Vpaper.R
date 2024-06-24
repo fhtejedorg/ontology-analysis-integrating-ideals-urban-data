@@ -1,4 +1,4 @@
-####### 00_Consolidating existing monitors into one dataset 
+####### 03_ Visualization of ideals thorugh time 
 library(readxl)
 library(igraph)
 library(dplyr)
@@ -10,7 +10,7 @@ library(reshape2)
 library(scales)
 setwd('C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper/')
 
-dat_ideals <- read_excel('./output/tables/Ideals_Keywords_Match.xlsx', sheet = 'Ideals_Keywords')
+dat_ideals <- read_excel('./output/tables/Supplementary_Material_Ideals_Codes.xlsx', sheet = 'Ideals_Codes')
 columns <- colnames(dat_ideals)[3:ncol(dat_ideals)]
 dat_ideals[,columns] <- apply(dat_ideals[, columns], 2, function(x)ifelse(!is.na(x), 1, 0))
 
@@ -33,23 +33,13 @@ ideals <- c("Collective City", ##6950a1
             "Within Planetary Boundaries", ##3f8d3e
             "Safe and Healthy" ##7973b5
 )
-colors <- c("#6950a1", "#7fb5ca", "red", "#9dad20", "#6993cd", "#3f8d3e", "#7973b5") 
-ideals_time2$Ideals <- factor(ideals_time2$Ideals, levels = ideals)
 
-# pp <- ggplot(ideals_time2, aes(fill=Ideals, x=value * 100, y=variable)) + 
-#   geom_bar(position="stack", stat="identity") +
-#   scale_fill_manual(values=colors) +
-#   geom_text(aes(label = scales::percent(value, accuracy = .1)), 
-#             position = position_stack(vjust = .5)) +
-#   scale_x_continuous(name = '%') +
-#   scale_y_discrete(name = 'Time/Coalition Agreements')
-#   
-# ggsave('./output/figures/Final figures Paper/fig_ideals_over_time.png', 
-#        plot = pp, dpi = 300)
+colors <- c("#7fc97f", "#beaed4", "#fdc086", "#ffff99", "#386cb0", "#f0027f", "#bf5b17")
+ideals_time2$Ideals <- factor(ideals_time2$Ideals, levels = ideals)
 
 pp <- ggplot(ideals_time2, aes(fill = Ideals, y = value * 100, x = variable)) +
   geom_bar(stat = "identity", position = 'stack', alpha = 0.9) +
-  geom_text(aes(label = scales::percent(value, accuracy = 0.1)), 
+  geom_text(aes(label = scales::percent(value, accuracy = 1)), 
             position = position_stack(vjust = 0.5), size = 3, color = "black", alpha = 0.5) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05)), 
                      labels = percent_format(scale = 1), 
