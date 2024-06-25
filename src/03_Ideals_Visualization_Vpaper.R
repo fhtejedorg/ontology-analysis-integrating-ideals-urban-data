@@ -11,10 +11,11 @@ library(scales)
 setwd('C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper/')
 
 dat_ideals <- read_excel('./output/tables/Supplementary_Material_Ideals_Codes.xlsx', sheet = 'Ideals_Codes')
-columns <- colnames(dat_ideals)[3:ncol(dat_ideals)]
+columns <- colnames(dat_ideals)[4:ncol(dat_ideals)]
 dat_ideals[,columns] <- apply(dat_ideals[, columns], 2, function(x)ifelse(!is.na(x), 1, 0))
 
 dat_ideals$Code <- NULL
+dat_ideals$`Code (Dutch)` <- NULL
 ideals_time <- dat_ideals %>% group_by(Ideals) %>% summarise(across(.cols = everything(), .fns = sum, na.rm = TRUE))
 #View(ideals_time)
 
@@ -65,4 +66,7 @@ ideals_time2 %>% filter(variable %in% c("2006-2010", '2010-2014', '2014-2018', '
   summarise(mean(value, na.rm = T))
 
 ggsave('./output/figures/Final figures Paper/fig_ideals_over_time.png', 
+       plot = pp, dpi = 300, width = 10, height = 6)
+
+ggsave('./output/figures/Final figures Paper/fig_ideals_over_time.pdf', 
        plot = pp, dpi = 300, width = 10, height = 6)
