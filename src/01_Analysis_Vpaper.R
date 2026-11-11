@@ -14,18 +14,32 @@ library(ggplot2)
 library(ggthemes)
 library(prettyR)
 library(scales)
-library(deeptime)
+# library(deeptime)
 library(FactoMineR)
 library(factoextra)
 library(devtools)
 library(gtools)
+library(stringr)
 options(ztable.type="html")
 
-setwd('C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper/network analysis/')
-source('functions.R')
-inpath <- 'C:/Users/tejed002/Dropbox (AMS Institute)/AMS Monitor/Ideals monitor/Work/M1 - identificeren monitors en gaps/Inventory'
-outpath <- 'C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper/output'
-load('data_to_network_all_ideals.Rdata')
+setwd("C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper_Ideals_City/GitLab/ontology_analysis_inventory")
+source('src/functions.R')
+inpath <- "./data"
+outpath <- './output'
+load(file.path(inpath, 'data_to_network_all_ideals.Rdata'))
+
+data_to_network_all_ideals$indicator <- ifelse(is.na(data_to_network_all_ideals$indicator), 
+                                               data_to_network_all_ideals$short_indicator, data_to_network_all_ideals$indicator)
+data_output_filter <- data_to_network_all_ideals
+data_output_filter$short_indicator <- gsub("[\r\n]", "", data_output_filter$short_indicator) 
+data_output_filter$indicator <- gsub("[\r\n]", "", data_output_filter$indicator) 
+write.table(data_output_filter, sep =';', row.names = FALSE, 
+            quote = T, na = '',fileEncoding = 'utf-8', eol = '\r',
+            file = file.path(inpath, 'Inventory_Indicators_Dimensions_Ideals.txt'))
+#####################################################################################################
+#### Network Analysis : Relationship at indicator level bilayered
+#####################################################################################################
+network_bilayer <- fun_generate_bilayer_edges_nodes(data_to_network_all_ideals, outpath = file.path(outpath, "network", "bilayer"))
 
 #####################################################################################################
 #####################################################################################################
@@ -72,9 +86,42 @@ tab_analysis_MCA_SUP <- cbind(tab_analysis_MCA_ROW_1, tab_analysis_MCA_ROW_2,
                               tab_analysis_MCA_ROW_3, tab_analysis_MCA_ROW_4, 
                               tab_analysis_MCA_MAIN)
 
-CA_network_sup <- CA(tab_analysis_MCA_SUP, 
-                     graph = TRUE, 
-                     col.sup = 4:27)
+#### Testing relationships Spatio-temporal and well-being 
+
+tab_pillar_stemp_1 <- table(data_to_network_all_ideals[, c("Pillar", "here_now")])
+tab_pillar_stemp_2 <- table(data_to_network_all_ideals[, c("Pillar", "later")])
+tab_pillar_stemp_3 <- table(data_to_network_all_ideals[, c("Pillar", "elsewhere")])
+tab_pillar_stemp_MAIN <- cbind(tab_pillar_stemp_1, tab_pillar_stemp_2, tab_pillar_stemp_3)
+prop.table(tab_pillar_stemp_MAIN, margin = 2)
+
+
+
+
+#### Testing relationships between Ideals and Spatiotemporal 
+cross_t_ideals_spatio <- tab_analysis_MCA_SUP[, 1:3]
+chi_output <- chisq.test(cross_t_ideals_spatio, simulate.p.value = TRUE) 
+chi_output$stdres
+
+chi_output$residuals[chi_output$residuals]
+
+std_res <- chi_output$stdres
+std_res <- as.vector(std_res)
+
+p_raw <- 2 * pnorm(-abs(std_res))
+p_holm <- p.adjust(p_raw, method = "holm")
+p_holm <- matrix(round(p_holm, 3), ncol = 3, byrow = FALSE)
+rownames(p_holm) <- rownames(chi_output$stdres)
+colnames(p_holm) <- colnames(chi_output$stdres)
+
+round(2 * pnorm(-abs(chi_output$stdres)), 3)
+
+
+CA_network_sup <- CA(tab_analysis_MCA_SUP, graph = TRUE, col.sup = 4:27)
+
+ideals_coord <- CA_network_sup$row$coord
+spatio_coord <- CA_network_sup$row$coord
+well_being_coord <- CA_network_sup$col.sup$coord
+
 
 pdf('../output/figures/Final figures Paper/CA_Ideals_Spatio_Temporal_Supplementary.pdf', 
     width = 10, height = 7)
@@ -97,7 +144,7 @@ freq_ideals <- data.frame(table(data_to_network_all_ideals$Ideal))
 colnames(freq_ideals)[2] <- "freq_ideals"
 data_ideals <- merge(data_ideals, freq_ideals, by.x = 'Ideal', by.y = 'Var1')
 
-path_result  = "C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper/output/figures/Final figures Paper/"
+path_result  = "C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper_Ideals_City/output/figures/Final figures Paper/"
 network <- fun_generate_edges_nodes_ideals(data_ideals = data_ideals,
                                        data_to_network = data_to_network_all_ideals,
                                        outpath = path_result)

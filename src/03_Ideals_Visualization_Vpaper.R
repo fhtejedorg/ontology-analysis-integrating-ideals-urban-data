@@ -8,7 +8,7 @@ library(gt)
 library(ggplot2)
 library(reshape2)
 library(scales)
-setwd('C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper/')
+setwd('C:/Users/tejed002/OneDrive - Wageningen University & Research/PhD-WUR/01_WUR-Research/05_Papers/03_Paper_Ideals_City/')
 
 dat_ideals <- read_excel('./output/tables/Supplementary_Material_Ideals_Codes.xlsx', sheet = 'Ideals_Codes')
 columns <- colnames(dat_ideals)[4:ncol(dat_ideals)]

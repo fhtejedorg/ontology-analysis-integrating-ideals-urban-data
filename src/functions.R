@@ -1,62 +1,108 @@
-###### create nodes and edges at the indicator level 
-
-fun_generate_edges_nodes <- function(data_to_network, title = 'all', folder = '', typelinks = 'sub_theme'){
-  vect_ids <- sort(data_to_network$id_network)
-  data_edges <- NULL
-  target_id_2 <- data.frame(NULL)
-  for(ii in 1:length(vect_ids)){
-    
-    #  if(typelinks %in% c('sub_theme', 'theme', 'dimension'){
-      if(!typelinks %in% c('theme', 'dimension')){
-        source_id <- data_to_network %>% filter(id_network == vect_ids[ii])
-        target_id_1 <- data_to_network %>% filter(sub_theme == source_id$sub_theme & id_network != source_id$id_network)
-        # target_id_2 <- data_to_network %>% filter(sub_theme_related == source_id$sub_theme & id_network != source_id$id_network)
-        weight <- 4
-      }
-      
-      
-      if(typelinks == 'theme'){
-        source_id <- data_to_network %>% filter(id_network == vect_ids[ii])
-        target_id_1 <- data_to_network %>% filter(sub_theme == source_id$sub_theme & id_network != source_id$id_network)
-        # target_id_2 <- data_to_network %>% filter(sub_theme_related == source_id$sub_theme & id_network != source_id$id_network)
-        weight <- 4
-        
-        if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0){
-          target_id_1 <- data_to_network %>% filter(theme == source_id$theme & id_network != source_id$id_network)
-          # target_id_2 <- data_to_network %>% filter(theme_related == source_id$theme & id_network != source_id$id_network)
-          weight <- 3
-        }
-      }
-      
-      if(typelinks == 'dimension'){
-        source_id <- data_to_network %>% filter(id_network == vect_ids[ii])
-        target_id_1 <- data_to_network %>% filter(sub_theme == source_id$sub_theme & id_network != source_id$id_network)
-        # target_id_2 <- data_to_network %>% filter(sub_theme_related == source_id$sub_theme & id_network != source_id$id_network)
-        weight <- 4
-        
-        if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0){
-          target_id_1 <- data_to_network %>% filter(theme == source_id$theme & id_network != source_id$id_network)
-          # target_id_2 <- data_to_network %>% filter(theme_related == source_id$theme & id_network != source_id$id_network)
-          weight <- 3
-        }
-        if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0){
-          target_id_1 <- data_to_network %>% filter(dimension == source_id$dimension & id_network != source_id$id_network)
-          # target_id_2 <- data_to_network %>% filter(dimension_related == source_id$dimension & id_network != source_id$id_network)
-          weight <- 2
-        }
-      }
-      # }
-    
-    if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0)next
-    
-    source_consol <- source_id$id_network
-    # target_consol <- c(target_id_1$id_network, target_id_2$id_network)
-    target_consol <- target_id_1$id_network
-    
-    data_edges_temp <- data.frame(Source = source_consol, Target = target_consol, Weight = weight)
-    data_edges <- rbind(data_edges, data_edges_temp)
-  }
+fun_generate_bilayer_edges_nodes <- function(data_to_network, outpath){
+  ##  Create network where indicators, ideals, and themes are nodes -- links are simple connections between them 
+  data_to_network$Ideal <- factor(data_to_network$Ideal)
+  data_to_network$theme <- factor(data_to_network$theme)
+  node_ideal <- levels(data_to_network$Ideal)
+  node_theme <- levels(data_to_network$theme)
   
+  n_indicator <- max(data_to_network$id_network)
+  id_ideals <- n_indicator + 1:length(node_ideal)
+  id_theme <- n_indicator + length(id_ideals) + 1:length(node_theme)
+  
+  df_ideals <- data.frame(Ideal = node_ideal, Target = id_ideals)
+  df_theme <- data.frame(theme = node_theme, Target = id_theme)
+  df_indicator <- data_to_network[, c("id_network", "indicator")] %>% rename(id = id_network)
+    
+  df_level_1 <- data_to_network[, c("id_network", "indicator", "Ideal")] 
+  df_level_1 <- merge(df_level_1, df_ideals, by = "Ideal", all.x = T)
+  df_level_1 <- df_level_1 %>% rename(Source = id_network) %>% select(Source, Target)
+  
+  df_level_2 <- data_to_network[, c("id_network", "indicator", "theme")] 
+  df_level_2 <- merge(df_level_2, df_theme, by = "theme", all.x = T)
+  df_level_2 <- df_level_2 %>% rename(Source = id_network) %>% select(Source, Target)
+  
+  df_edges <- rbind(df_level_1, df_level_2)
+  
+  df_ideals[, "type"] <- "Ideals"
+  df_theme[, "type"] <- "theme"
+  df_indicator[, "type"] = "indicator"
+  
+  df_ideals <- df_ideals  %>% rename(label = Ideal, id = Target) %>% mutate(definition = label)
+  df_theme <- df_theme %>% rename(label = theme, id = Target) %>% mutate(definition = label)
+  df_indicator <- df_indicator %>% mutate(label = NA, definition = indicator, indicator = NULL)
+  df_nodes <- rbind(df_indicator, df_ideals, df_theme)
+  
+  name_edges <- paste('data_edges_bilayer', '.csv', sep = '')
+  name_nodes <- paste('data_node_bilayer', '.csv', sep = '')
+  
+  #data_nodes <- unique(data_nodes)
+  # data_edges <- unique(data_edges)
+  write.table(df_edges, file = file.path(outpath, name_edges), sep = ',', row.names = F, na = '')
+  write.table(df_nodes, file = file.path(outpath, name_nodes), sep = ',', row.names = F, na = '')
+  
+  return(list(data_edges = df_edges, data_nodes = df_nodes))
+}
+
+  
+fun_generate_edges_nodes <- function(data_to_network, title = 'all', folder = '', typelinks = 'sub_theme'){
+##  Create network at the indicator level: Nodes: indicators, Links: typeLinks define how links are built: {theme, dimension}
+##  
+    vect_ids <- sort(data_to_network$id_network)
+    data_edges <- NULL
+    target_id_2 <- data.frame(NULL)
+    for(ii in 1:length(vect_ids)){
+      
+      #  if(typelinks %in% c('sub_theme', 'theme', 'dimension'){
+        if(!typelinks %in% c('theme', 'dimension')){
+          source_id <- data_to_network %>% filter(id_network == vect_ids[ii])
+          target_id_1 <- data_to_network %>% filter(sub_theme == source_id$sub_theme & id_network != source_id$id_network)
+          # target_id_2 <- data_to_network %>% filter(sub_theme_related == source_id$sub_theme & id_network != source_id$id_network)
+          weight <- 4
+        }
+        
+        
+        if(typelinks == 'theme'){
+          source_id <- data_to_network %>% filter(id_network == vect_ids[ii])
+          target_id_1 <- data_to_network %>% filter(sub_theme == source_id$sub_theme & id_network != source_id$id_network)
+          # target_id_2 <- data_to_network %>% filter(sub_theme_related == source_id$sub_theme & id_network != source_id$id_network)
+          weight <- 4
+          
+          if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0){
+            target_id_1 <- data_to_network %>% filter(theme == source_id$theme & id_network != source_id$id_network)
+            # target_id_2 <- data_to_network %>% filter(theme_related == source_id$theme & id_network != source_id$id_network)
+            weight <- 3
+          }
+        }
+        
+        if(typelinks == 'dimension'){
+          source_id <- data_to_network %>% filter(id_network == vect_ids[ii])
+          target_id_1 <- data_to_network %>% filter(sub_theme == source_id$sub_theme & id_network != source_id$id_network)
+          # target_id_2 <- data_to_network %>% filter(sub_theme_related == source_id$sub_theme & id_network != source_id$id_network)
+          weight <- 4
+          
+          if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0){
+            target_id_1 <- data_to_network %>% filter(theme == source_id$theme & id_network != source_id$id_network)
+            # target_id_2 <- data_to_network %>% filter(theme_related == source_id$theme & id_network != source_id$id_network)
+            weight <- 3
+          }
+          if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0){
+            target_id_1 <- data_to_network %>% filter(dimension == source_id$dimension & id_network != source_id$id_network)
+            # target_id_2 <- data_to_network %>% filter(dimension_related == source_id$dimension & id_network != source_id$id_network)
+            weight <- 2
+          }
+        }
+        # }
+      
+      if(nrow(target_id_1) == 0 & nrow(target_id_2) == 0)next
+      
+      source_consol <- source_id$id_network
+      # target_consol <- c(target_id_1$id_network, target_id_2$id_network)
+      target_consol <- target_id_1$id_network
+      
+      data_edges_temp <- data.frame(Source = source_consol, Target = target_consol, Weight = weight)
+      data_edges <- rbind(data_edges, data_edges_temp)
+    }
+    
   data_nodes <- data.frame(id = vect_ids, label = data_to_network$short_indicator, 
                            monitor = data_to_network$monitor, dimension = data_to_network$dimension, 
                            theme = data_to_network$theme, 
